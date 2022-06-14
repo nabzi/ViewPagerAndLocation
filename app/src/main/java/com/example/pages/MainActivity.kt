@@ -1,6 +1,7 @@
 package com.example.pages
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
@@ -17,17 +18,35 @@ import androidx.navigation.ui.NavigationUI.setupWithNavController
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity()  {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var map: GoogleMap
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         getLocationPermission()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        val mapFragment = supportFragmentManager
+            .findFragmentById(R.id.map) as SupportMapFragment
+        mapFragment.getMapAsync(OnMapReadyCallback { readyMap ->
+            Log.d("location", "map ready")
+
+            map = readyMap
+
+        })
     }
+
 
     private fun getLocationPermission() {
         val locationPermissionRequest = registerForActivityResult(
@@ -54,8 +73,13 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+    @SuppressLint("MissingPermission")
     private fun showLocation() {
         Toast.makeText(this, "permission granted", Toast.LENGTH_SHORT).show()
+        if(!isLocationEnabled()){
+            Toast.makeText(this, "turn on your location", Toast.LENGTH_SHORT).show()
+            Log.d("location", "turn on your location")
+        }
         if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -66,14 +90,13 @@ class MainActivity : AppCompatActivity() {
         ) {
             return
         }
-        if(!isLocationEnabled()){
-            Toast.makeText(this, "turn on your location", Toast.LENGTH_SHORT).show()
-            Log.d("location", "turn on your location")
-        }
         fusedLocationClient.lastLocation.addOnSuccessListener { location : Location? ->
                 location?.let{
+                    it.time
                     Toast.makeText(this, "latitude" + it.latitude + " , long=" + it.longitude, Toast.LENGTH_LONG).show()
                     Log.d("location lastLocation" , "latitude" + it.latitude + " , long=" + it.longitude)
+
+                    showLocationOnMap(LatLng(it.latitude , it.longitude))
                 }
         }
         fusedLocationClient.getCurrentLocation(	PRIORITY_HIGH_ACCURACY , null).addOnSuccessListener{
@@ -84,6 +107,20 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+    private fun showLocationOnMap(latLng: LatLng) {
+        map.setMinZoomPreference(6.0f)
+        map.setMaxZoomPreference(14.0f)
+        map.addMarker(
+            MarkerOptions()
+                .position(latLng)
+                .title("Marker in location")
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.marker))
+            .zIndex(2.0f))
+        map.moveCamera(CameraUpdateFactory.newLatLng(latLng))
+
+    }
+
     private fun isLocationEnabled(): Boolean {
         val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         return LocationManagerCompat.isLocationEnabled(locationManager)

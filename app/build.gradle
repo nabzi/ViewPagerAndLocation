@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
+    id 'com.google.android.libraries.mapsplatform.secrets-gradle-plugin'
 }
 
 android {
@@ -47,4 +48,5 @@ dependencies {
 
     implementation 'me.relex:circleindicator:2.1.6'
     implementation 'com.google.android.gms:play-services-location:20.0.0'
+    implementation 'com.google.android.gms:play-services-maps:18.0.2'
 }
